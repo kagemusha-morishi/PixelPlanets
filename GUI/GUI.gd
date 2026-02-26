@@ -18,18 +18,25 @@ const MedianCutQuantization = preload("res://addons/gdgifexporter/quantization/m
 
 @onready var planets = {
 	"Terran Wet": preload("res://Planets/Rivers/Rivers.tscn"),
+	"Terran Wet 32col": preload("res://Planets/Rivers/Rivers32.tscn"),
 	"Terran Dry": preload("res://Planets/DryTerran/DryTerran.tscn"),	
 	"Islands": preload("res://Planets/LandMasses/LandMasses.tscn"),
 	"No atmosphere": preload("res://Planets/NoAtmosphere/NoAtmosphere.tscn"),
+	"No atmosphere 32col": preload("res://Planets/NoAtmosphere/NoAtmosphere32.tscn"),
 	"Gas giant 1": preload("res://Planets/GasPlanet/GasPlanet.tscn"),
 	"Gas giant 32col": preload("res://Planets/GasPlanet/GasPlanet32.tscn"),
 	"Gas giant 2": preload("res://Planets/GasPlanetLayers/GasPlanetLayers.tscn"),
 	"Ice World": preload("res://Planets/IceWorld/IceWorld.tscn"),
 	"Lava World": preload("res://Planets/LavaWorld/LavaWorld.tscn"),
+	"Lava World 32col": preload("res://Planets/LavaWorld/LavaWorld32.tscn"),
 	"Asteroid": preload("res://Planets/Asteroids/Asteroid.tscn"),
+	"Asteroid 32col": preload("res://Planets/Asteroids/Asteroids32.tscn"),
 	"Black Hole": preload("res://Planets/BlackHole/BlackHole.tscn"),
+	"Black Hole 32col": preload("res://Planets/BlackHole/BlackHole32.tscn"),
 	"Galaxy": preload("res://Planets/Galaxy/Galaxy.tscn"),
+	"Galaxy 32col": preload("res://Planets/Galaxy/Galaxy32.tscn"),
 	"Star": preload("res://Planets/Star/Star.tscn"),
+	"Star 32col": preload("res://Planets/Star/Star32.tscn"),
 }
 var pixels = 100.0
 var sd = 0
