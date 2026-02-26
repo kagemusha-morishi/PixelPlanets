@@ -22,6 +22,7 @@ const MedianCutQuantization = preload("res://addons/gdgifexporter/quantization/m
 	"Islands": preload("res://Planets/LandMasses/LandMasses.tscn"),
 	"No atmosphere": preload("res://Planets/NoAtmosphere/NoAtmosphere.tscn"),
 	"Gas giant 1": preload("res://Planets/GasPlanet/GasPlanet.tscn"),
+	"Gas giant 32col": preload("res://Planets/GasPlanet/GasPlanet32.tscn"),
 	"Gas giant 2": preload("res://Planets/GasPlanetLayers/GasPlanetLayers.tscn"),
 	"Ice World": preload("res://Planets/IceWorld/IceWorld.tscn"),
 	"Lava World": preload("res://Planets/LavaWorld/LavaWorld.tscn"),
