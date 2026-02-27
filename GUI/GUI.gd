@@ -117,6 +117,7 @@ func _on_layer_selected(id):
 	viewport_planet.get_child(0).toggle_layer(id)
 	_make_layer_selection(viewport_planet.get_child(0))
 	# Update viewport size based on new effective scale
+	await get_tree().process_frame
 	var planet = viewport_planet.get_child(0)
 	var effective_scale = planet.get_effective_scale()
 	viewport.size = Vector2(pixels, pixels) * effective_scale
@@ -169,6 +170,10 @@ func _on_Button_pressed():
 func _on_ExportPNG_pressed():
 	var planet = viewport_planet.get_child(0)
 	var effective_scale = planet.get_effective_scale()
+	# Ensure viewport is correctly sized for export
+	viewport.size = Vector2(pixels, pixels) * effective_scale
+	planet.position = pixels * 0.5 * (effective_scale - 1) * Vector2(1, 1)
+	
 	var tex = viewport.get_texture().get_image()
 	var image = Image.create(pixels * effective_scale, pixels * effective_scale, false, Image.FORMAT_RGBA8)
 	var source_xy = 0
@@ -219,9 +224,15 @@ func save_image(img, file_name):
 			img.save_png("res://%s.png"%file_name)
 
 func _on_ExportSpriteSheet_pressed():
+	var planet = viewport_planet.get_child(0)
+	var effective_scale = planet.get_effective_scale()
+	# Ensure viewport is correctly sized for export
+	viewport.size = Vector2(pixels, pixels) * effective_scale
+	planet.position = pixels * 0.5 * (effective_scale - 1) * Vector2(1, 1)
+	
 	$Panel.visible = false
 	$Popup.visible = true
-	$Popup.set_pixels(pixels * viewport_planet.get_child(0).get_effective_scale())
+	$Popup.set_pixels(pixels * effective_scale)
 
 func _on_PickerExit_pressed():
 	_close_picker()
@@ -253,6 +264,12 @@ func _on_ShouldDither_pressed():
 	viewport_planet.get_child(0).set_dither(should_dither)
 
 func _on_ExportGIF_pressed():
+	var planet = viewport_planet.get_child(0)
+	var effective_scale = planet.get_effective_scale()
+	# Ensure viewport is correctly sized for export
+	viewport.size = Vector2(pixels, pixels) * effective_scale
+	planet.position = pixels * 0.5 * (effective_scale - 1) * Vector2(1, 1)
+	
 	$GifPopup.visible = true
 	cancel_gif = false
 
