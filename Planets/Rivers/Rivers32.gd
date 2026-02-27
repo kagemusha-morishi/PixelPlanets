@@ -63,22 +63,27 @@ static func generate_multi_gradient(stops: Array, total_steps: int) -> Array:
 	return gradient
 
 func randomize_colors():
-	# Land gradient - greens to browns
-	var land_hue = randf_range(0.1, 0.4) # Green to browns
+	var seed_colors = _generate_new_colorscheme(3, randf_range(0.7, 1.0), randf_range(0.45, 0.55))
+	
+	# Land colors (32) - green to dark
 	var land_stops = []
-	for i in range(randi() % 3 + 3):
-		var h = fmod(land_hue + float(i) * 0.02, 1.0)
-		var s = randf_range(0.4, 0.8)
-		var v = randf_range(0.2 + float(i) * 0.1, 0.7)
+	for i in range(5):
+		var h = fmod(seed_colors[0].h + float(i) * 0.02, 1.0)
+		var s = randf_range(0.4, 0.7)
+		var v = randf_range(0.2 + float(i) * 0.15, 0.8)
 		land_stops.append(Color.from_hsv(h, s, v))
 	var land_gradient = generate_multi_gradient(land_stops, 32)
 	
-	# Cloud gradient - whites and grays
+	# River colors (32) - part of land shader (last 2 colors in original)
+	# This is handled by the Land shader's color array
+	
+	# Cloud colors (32)
 	var cloud_stops = []
-	for i in range(randi() % 2 + 2):
-		var v = randf_range(0.7, 1.0)
-		cloud_stops.append(Color(v, v, v))
-	cloud_stops.append(Color(0.8, 0.8, 0.85))
+	for i in range(4):
+		var h = fmod(seed_colors[2].h + float(i) * 0.01, 1.0)
+		var s = randf_range(0.1, 0.4)
+		var v = randf_range(0.6 + float(i) * 0.15, 1.0)
+		cloud_stops.append(Color.from_hsv(h, s, v))
 	var cloud_gradient = generate_multi_gradient(cloud_stops, 32)
 	
 	set_colors(land_gradient + cloud_gradient)
