@@ -6,8 +6,9 @@ uniform float time_speed : hint_range(0.0, 1.0) = 0.05;
 uniform float time;
 uniform float rotation : hint_range(0.0, 6.28) = 0.0;
 uniform vec4 colors[32] : source_color;
-uniform int n_colors = 32;
+uniform int n_colors : hint_range(1, 32) = 32;
 uniform bool should_dither = true;
+
 uniform float seed: hint_range(1, 10);
 uniform float size = 50.0;
 uniform int OCTAVES : hint_range(0, 20, 1);
@@ -20,7 +21,7 @@ float rand(vec2 co) {
 
 vec2 rotate(vec2 vec, float angle) {
 	vec -=vec2(0.5);
-	vec *= mat2(vec2(cos(angle),-sin(angle)), vec2(sin(angle),cos(angle)));
+	vec *= mat2(vec2(cos(angle),-sin(angle)),vec2(sin(angle),cos(angle)));
 	vec += vec2(0.5);
 	return vec;
 }
@@ -100,7 +101,7 @@ void fragment() {
 		n *= 1.3;
 	}
 	
-	// constrain values to discrete steps and choose color (same as original)
+	// constrain values to discrete steps and choose color (same logic as original)
 	float interpolate = floor(n * float(n_colors - 1)) / float(n_colors - 1);
 	vec4 col = colors[int(interpolate * float(n_colors-1))];
 	
