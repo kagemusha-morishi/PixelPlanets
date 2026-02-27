@@ -116,6 +116,11 @@ func set_planet_holder_margin(margin_value):
 func _on_layer_selected(id):
 	viewport_planet.get_child(0).toggle_layer(id)
 	_make_layer_selection(viewport_planet.get_child(0))
+	# Update viewport size based on new effective scale
+	var planet = viewport_planet.get_child(0)
+	var effective_scale = planet.get_effective_scale()
+	viewport.size = Vector2(pixels, pixels) * effective_scale
+	planet.position = pixels * 0.5 * (effective_scale - 1) * Vector2(1, 1)
 
 func _make_layer_selection(planet):
 	var layers = planet.get_layers()
@@ -163,20 +168,22 @@ func _on_Button_pressed():
 
 func _on_ExportPNG_pressed():
 	var planet = viewport_planet.get_child(0)
+	var effective_scale = planet.get_effective_scale()
 	var tex = viewport.get_texture().get_image()
-	var image = Image.create(pixels * planet.relative_scale, pixels * planet.relative_scale, false, Image.FORMAT_RGBA8)
+	var image = Image.create(pixels * effective_scale, pixels * effective_scale, false, Image.FORMAT_RGBA8)
 	var source_xy = 0
-	var source_size = pixels*planet.relative_scale
-	var source_rect = Rect2(source_xy, source_xy,source_size,source_size)
+	var source_size = pixels * effective_scale
+	var source_rect = Rect2(source_xy, source_xy, source_size, source_size)
 	image.blit_rect(tex, source_rect, Vector2(0,0))
 	
 	save_image(image, chosen_type + " - " + str(sd))
 
 func export_spritesheet(sheet_size, progressbar, pixel_margin = 0.0):
 	var planet = viewport_planet.get_child(0)
+	var effective_scale = planet.get_effective_scale()
 	progressbar.max_value = sheet_size.x * sheet_size.y
-	var sheet = Image.create(pixels * sheet_size.x * planet.relative_scale + sheet_size.x*pixel_margin + pixel_margin,
-				pixels * sheet_size.y * planet.relative_scale + sheet_size.y*pixel_margin + pixel_margin,
+	var sheet = Image.create(pixels * sheet_size.x * effective_scale + sheet_size.x*pixel_margin + pixel_margin,
+				pixels * sheet_size.y * effective_scale + sheet_size.y*pixel_margin + pixel_margin,
 				false, Image.FORMAT_RGBA8)
 	planet.override_time = true
 	
@@ -189,9 +196,9 @@ func export_spritesheet(sheet_size, progressbar, pixel_margin = 0.0):
 			if index != 0:
 				var image = viewport.get_texture().get_image()
 				var source_xy = 0
-				var source_size = pixels*planet.relative_scale
-				var source_rect = Rect2(source_xy, source_xy,source_size,source_size)
-				var destination = Vector2(x - 1,y) * pixels * planet.relative_scale + Vector2(x * pixel_margin, (y+1) * pixel_margin)
+				var source_size = pixels * effective_scale
+				var source_rect = Rect2(source_xy, source_xy, source_size, source_size)
+				var destination = Vector2(x - 1,y) * pixels * effective_scale + Vector2(x * pixel_margin, (y+1) * pixel_margin)
 				sheet.blit_rect(image, source_rect, destination)
 
 			index +=1
@@ -214,7 +221,7 @@ func save_image(img, file_name):
 func _on_ExportSpriteSheet_pressed():
 	$Panel.visible = false
 	$Popup.visible = true
-	$Popup.set_pixels(pixels * viewport_planet.get_child(0).relative_scale)
+	$Popup.set_pixels(pixels * viewport_planet.get_child(0).get_effective_scale())
 
 func _on_PickerExit_pressed():
 	_close_picker()
@@ -252,7 +259,8 @@ func _on_ExportGIF_pressed():
 var cancel_gif = false
 func export_gif(frames, frame_delay, progressbar):
 	var planet = viewport_planet.get_child(0)
-	var exporter = GIFExporter.new(pixels*planet.relative_scale, pixels*planet.relative_scale)
+	var effective_scale = planet.get_effective_scale()
+	var exporter = GIFExporter.new(pixels * effective_scale, pixels * effective_scale)
 	progressbar.max_value = frames
 	
 	planet.override_time = true
@@ -271,11 +279,11 @@ func export_gif(frames, frame_delay, progressbar):
 		await get_tree().process_frame
 		
 		var tex = viewport.get_texture().get_image()
-		var image = Image.create(pixels * planet.relative_scale, pixels * planet.relative_scale, false, Image.FORMAT_RGBA8)
+		var image = Image.create(pixels * effective_scale, pixels * effective_scale, false, Image.FORMAT_RGBA8)
 		
 		var source_xy = 0
-		var source_size = pixels*planet.relative_scale
-		var source_rect = Rect2(source_xy, source_xy,source_size,source_size)
+		var source_size = pixels * effective_scale
+		var source_rect = Rect2(source_xy, source_xy, source_size, source_size)
 		image.blit_rect(tex, source_rect, Vector2(0,0))
 		exporter.add_frame(image, frame_delay, MedianCutQuantization)
 		

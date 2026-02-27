@@ -59,3 +59,10 @@ func randomize_colors():
 		cols.append(new_col)
 
 	set_colors(cols)
+
+# Override to calculate effective scale based on visible Ring layer
+func get_effective_scale() -> float:
+	if $Ring.visible:
+		return 3.0  # Ring needs 3x scale
+	else:
+		return 1.0  # Only planet body visible

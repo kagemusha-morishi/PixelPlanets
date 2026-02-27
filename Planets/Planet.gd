@@ -78,3 +78,15 @@ func get_layers():
 
 func toggle_layer(num):
 	get_children()[num].visible = !get_children()[num].visible
+
+# Calculate effective scale based on visible layers
+# Override this in planets with larger layers (like GasPlanetLayers with Ring)
+func get_effective_scale() -> float:
+	var max_scale = 1.0
+	for c in get_children():
+		if c.visible and c is ColorRect:
+			var rect: ColorRect = c as ColorRect
+			# Check if this layer extends beyond the base size
+			if rect.size.x > relative_scale:
+				max_scale = max(max_scale, rect.size.x / relative_scale)
+	return max(max_scale, 1.0)
