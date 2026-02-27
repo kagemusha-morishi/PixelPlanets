@@ -11,7 +11,6 @@ uniform float light_border_1 : hint_range(0.0, 1.0) = 0.52;
 uniform float light_border_2 : hint_range(0.0, 1.0) = 0.62;
 uniform float rotation : hint_range(0.0, 6.28) = 0.0;
 
-// Extended to 32 colors for smooth gradient
 uniform vec4 colors[32] : source_color;
 
 uniform float size = 50.0;
@@ -50,7 +49,6 @@ float fbm(vec2 coord){
 	return value;
 }
 
-// by Leukbaars from https://www.shadertoy.com/view/4tK3zR
 float circleNoise(vec2 uv) {
     float uv_y = floor(uv.y);
     uv.x += uv_y*.31;
@@ -64,13 +62,12 @@ float circleNoise(vec2 uv) {
 float cloud_alpha(vec2 uv) {
 	float c_noise = 0.0;
 	
-	// more iterations for more turbulence
 	for (int i = 0; i < 9; i++) {
 		c_noise += circleNoise((uv * size * 0.3) + (float(i+1)+10.) + (vec2(time*time_speed, 0.0)));
 	}
-	float fbm = fbm(uv*size+c_noise + vec2(time*time_speed, 0.0));
+	float fbm_val = fbm(uv*size+c_noise + vec2(time*time_speed, 0.0));
 	
-	return fbm;//step(a_cutoff, fbm);
+	return fbm_val;
 }
 
 bool dither(vec2 uv_pixel, vec2 uv_real) {
@@ -90,57 +87,37 @@ vec2 rotate(vec2 coord, float angle){
 	return coord + 0.5;
 }
 
-// Sample gradient from 32 color palette
-// t should be in range [0, 1]
-vec4 sample_gradient(float t) {
-	// Clamp t to valid range
-	t = clamp(t, 0.0, 1.0);
-	
-	// Map to color indices (0 to 30, leaving room for interpolation)
-	float scaled = t * 31.0;
-	int idx = int(floor(scaled));
-	int idx_next = min(idx + 1, 31);
-	float blend = fract(scaled);
-	
-	// Linear interpolation between adjacent colors
-	return mix(colors[idx], colors[idx_next], blend);
-}
-
 void fragment() {
-	// pixelize uv
 	vec2 uv = floor(UV*pixels)/pixels;
 	
-	// distance to light source
 	float d_light = distance(uv , light_origin);
 	
-	// cut out a circle
 	float d_circle = distance(uv, vec2(0.5));
-	// stepping over 0.5 instead of 0.49999 makes some pixels a little buggy
 	float a = step(d_circle, 0.49999);
 	
 	uv = rotate(uv, rotation);
-	
-	// map to sphere
 	uv = spherify(uv);
 	
-	// slightly make uv go down on the right, and up in the left
 	uv.y += smoothstep(0.0, cloud_curve, abs(uv.x-0.4));
 	
 	float c = cloud_alpha(uv*vec2(1.0, stretch));
 	
-	// Sample gradient based on cloud depth and lighting
-	// Base gradient from cloud noise
-	float gradient_t = c;
+	// Map original 4-color logic to 32 colors:
+	// colors[0] (base) -> colors[7]
+	// colors[1] (cloud shadow) -> colors[15]
+	// colors[2] (light edge 1) -> colors[23]
+	// colors[3] (light edge 2) -> colors[31]
 	
-	// Modify gradient based on distance from light
-	float light_influence = smoothstep(0.2, 0.8, d_light + c * 0.3);
-	gradient_t = mix(gradient_t, gradient_t * 1.2 + 0.3, light_influence);
+	vec4 col = colors[7];
+	if (c < cloud_cover + 0.03) {
+		col = colors[15];
+	}
+	if (d_light + c*0.2 > light_border_1) {
+		col = colors[23];
+	}
+	if (d_light + c*0.2 > light_border_2) {
+		col = colors[31];
+	}
 	
-	// Apply cover cutoff using alpha
-	float alpha = step(cloud_cover, c) * a;
-	
-	// Get color from gradient
-	vec4 col = sample_gradient(clamp(gradient_t, 0.0, 1.0));
-	
-	COLOR = vec4(col.rgb, alpha * col.a);
+	COLOR = vec4(col.rgb, step(cloud_cover, c) * a * col.a);
 }

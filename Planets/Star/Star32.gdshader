@@ -6,6 +6,7 @@ uniform float time_speed : hint_range(0.0, 1.0) = 0.05;
 uniform float time;
 uniform float rotation : hint_range(0.0, 6.28) = 0.0;
 uniform vec4 colors[32] : source_color;
+uniform int n_colors = 32;
 uniform bool should_dither = true;
 uniform float seed: hint_range(1, 10);
 uniform float size = 50.0;
@@ -19,7 +20,7 @@ float rand(vec2 co) {
 
 vec2 rotate(vec2 vec, float angle) {
 	vec -=vec2(0.5);
-	vec *= mat2(vec2(cos(angle),-sin(angle)),vec2(sin(angle),cos(angle)));
+	vec *= mat2(vec2(cos(angle),-sin(angle)), vec2(sin(angle),cos(angle)));
 	vec += vec2(0.5);
 	return vec;
 }
@@ -27,24 +28,31 @@ vec2 rotate(vec2 vec, float angle) {
 float noise(vec2 coord){
 	vec2 i = floor(coord);
 	vec2 f = fract(coord);
+		
 	float a = rand(i);
 	float b = rand(i + vec2(1.0, 0.0));
 	float c = rand(i + vec2(0.0, 1.0));
 	float d = rand(i + vec2(1.0, 1.0));
+
 	vec2 cubic = f * f * (3.0 - 2.0 * f);
+
 	return mix(a, b, cubic.x) + (c - a) * cubic.y * (1.0 - cubic.x) + (d - b) * cubic.x * cubic.y;
 }
 
 vec2 Hash2(vec2 p) {
 	float r = 523.0*sin(dot(p, vec2(53.3158, 43.6143)));
 	return vec2(fract(15.32354 * r), fract(17.25865 * r));
+	
 }
 
+// Tileable cell noise by Dave_Hoskins from shadertoy: https://www.shadertoy.com/view/4djGRh
 float Cells(in vec2 p, in float numCells) {
 	p *= numCells;
 	float d = 1.0e10;
-	for (int xo = -1; xo <= 1; xo++) {
-		for (int yo = -1; yo <= 1; yo++) {
+	for (int xo = -1; xo <= 1; xo++)
+	{
+		for (int yo = -1; yo <= 1; yo++)
+		{
 			vec2 tp = floor(p) + vec2(float(xo), float(yo));
 			tp = p - tp - Hash2(mod(tp, numCells / TILES));
 			d = min(d, dot(tp, tp));
@@ -64,33 +72,37 @@ vec2 spherify(vec2 uv) {
 	return sphere * 0.5+0.5;
 }
 
-vec4 sample_gradient(float t) {
-	t = clamp(t, 0.0, 1.0);
-	float scaled = t * 31.0;
-	int idx = int(floor(scaled));
-	int idx_next = min(idx + 1, 31);
-	float blend = fract(scaled);
-	return mix(colors[idx], colors[idx_next], blend);
-}
-
 void fragment() {
+	// pixelize uv
 	vec2 pixelized = floor(UV*pixels)/pixels;
+	
+	// cut out a circle
+	// stepping over 0.5 instead of 0.49999 makes some pixels a little buggy
 	float a = step(distance(pixelized, vec2(0.5)), .49999);
+	
+	// use dither val later to mix between colors
 	bool dith = dither(UV, pixelized);
 	
 	pixelized = rotate(pixelized, rotation);
+	
+	// spherify has to go after dither
 	pixelized = spherify(pixelized);
 	
+	// use two different sized cells for some variation
 	float n = Cells(pixelized - vec2(time * time_speed * 2.0, 0), 10);
 	n *= Cells(pixelized - vec2(time * time_speed * 1.0, 0), 20);
 
+	
+	// adjust cell value to get better looking stuff
 	n*= 2.;
 	n = clamp(n, 0.0, 1.0);
-	if (dith || !should_dither) {
+	if (dith || !should_dither) { // here we dither
 		n *= 1.3;
 	}
 	
-	vec4 col = sample_gradient(n);
+	// constrain values to discrete steps and choose color (same as original)
+	float interpolate = floor(n * float(n_colors - 1)) / float(n_colors - 1);
+	vec4 col = colors[int(interpolate * float(n_colors-1))];
 	
 	COLOR = vec4(col.rgb, a * col.a);
 }

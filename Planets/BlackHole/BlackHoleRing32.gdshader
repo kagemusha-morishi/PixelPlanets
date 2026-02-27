@@ -9,6 +9,7 @@ uniform float disk_width : hint_range(0.0, 0.15) = 0.1;
 uniform float ring_perspective = 4.0;
 uniform bool should_dither = true;
 uniform vec4 colors[32] : source_color;
+uniform int n_colors : hint_range(1, 32) = 32;
 
 uniform float size = 50.0;
 uniform int OCTAVES : hint_range(0, 20, 1);
@@ -69,15 +70,6 @@ vec2 rotate(vec2 coord, float angle){
 	return coord + 0.5;
 }
 
-vec4 sample_gradient(float t) {
-	t = clamp(t, 0.0, 1.0);
-	float scaled = t * 31.0;
-	int idx = int(floor(scaled));
-	int idx_next = min(idx + 1, 31);
-	float blend = fract(scaled);
-	return mix(colors[idx], colors[idx_next], blend);
-}
-
 void fragment() {
 	vec2 uv = floor(UV*pixels)/pixels;
 	bool dith = dither(UV, uv);
@@ -119,9 +111,11 @@ void fragment() {
 		disk *= 1.2;
 	}
 	
-	// Use gradient sampling
-	float gradient_t = clamp(disk + light_d, 0.0, 1.0);
-	vec4 col = sample_gradient(gradient_t);
+	// Posterized color selection (same logic as original)
+	float n_posterized = float(n_colors - 1);
+	float posterized = floor((disk+light_d)*n_posterized);
+	posterized = min(posterized, n_posterized);
+	vec4 col = colors[int(posterized)];
 	
 	float disk_a = step(0.15, disk);
 	COLOR = vec4(col.rgb, disk_a * col.a);

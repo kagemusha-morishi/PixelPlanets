@@ -6,22 +6,22 @@ uniform vec4 colors[32] : source_color;
 uniform float radius : hint_range(0.0,0.5) = 0.5;
 uniform float light_width : hint_range(0.0, 0.5) = 0.05;
 
-vec4 sample_gradient(float t) {
-	t = clamp(t, 0.0, 1.0);
-	float scaled = t * 31.0;
-	int idx = int(floor(scaled));
-	int idx_next = min(idx + 1, 31);
-	float blend = fract(scaled);
-	return mix(colors[idx], colors[idx_next], blend);
-}
-
 void fragment() {
 	vec2 uv = floor(UV*pixels)/pixels;
 	float d_to_center = distance(uv, vec2(0.5));
 	
-	// Use gradient based on distance
-	float t = smoothstep(radius - light_width, radius, d_to_center);
-	vec4 col = sample_gradient(t);
+	// Map original 3-color logic to 32 colors:
+	// colors[0] (inner) -> colors[0] (center, darkest)
+	// colors[1] (middle ring) -> colors[10] (transition)
+	// colors[2] (outer ring) -> colors[20] (edge, brightest)
+	
+	vec4 col = colors[0];	
+	if (d_to_center > radius - light_width) {
+		col = colors[10];
+	}	
+	if (d_to_center > radius - light_width * 0.5) {
+		col = colors[20];
+	}
 	
 	float a = step(d_to_center, radius);
 	COLOR = vec4(col.rgb, a * col.a);

@@ -70,16 +70,6 @@ float crater(vec2 uv) {
 	return 1.0 - c;
 }
 
-// Sample gradient from 32 color palette
-vec4 sample_gradient(float t) {
-	t = clamp(t, 0.0, 1.0);
-	float scaled = t * 31.0;
-	int idx = int(floor(scaled));
-	int idx_next = min(idx + 1, 31);
-	float blend = fract(scaled);
-	return mix(colors[idx], colors[idx_next], blend);
-}
-
 void fragment() {
 	vec2 uv = floor(UV*pixels)/pixels;
 	bool dith = dither(uv, UV);
@@ -94,21 +84,32 @@ void fragment() {
 	
 	float noise_rel = (n2_step + n2) - (n_step + n);
 	
-	float c1 = crater(uv);
+	float c1 = crater(uv );
 	float c2 = crater(uv + (light_origin-0.5)*0.03);
 
-	// Use gradient sampling
-	float gradient_t = (noise_rel + 1.0) * 0.5; // Map -1..1 to 0..1
-	gradient_t += (c1 - 0.5) * 0.2; // Add crater influence
+	// Map original 3-color indices to 32-color indices:
+	// colors[0] -> colors[10] (shadow/dark region)
+	// colors[1] -> colors[21] (base/middle region)  
+	// colors[2] -> colors[31] (highlight/bright region)
 	
-	vec4 col = sample_gradient(clamp(gradient_t, 0.0, 1.0));
+	// base
+	vec4 col = colors[21];
 	
-	// Adjust for craters
-	if (c1 > 0.4) {
-		col = sample_gradient(0.5 + (c1 - 0.4) * 0.3);
+	// noise shadow
+	if (noise_rel < -0.06 || (noise_rel < -0.04 && (dith || !should_dither))) {
+		col = colors[10];
 	}
-	if (c2 < c1) {
-		col = sample_gradient(0.7 + (c1 - c2) * 0.3);
+	// noise highlight
+	if (noise_rel > 0.05 || (noise_rel > 0.03 && (dith || !should_dither))) {
+		col = colors[31];
+	}
+	
+	// crater
+	if (c1 > 0.4)  {
+		col = colors[21];
+	}
+	if (c2<c1) {
+		col = colors[31];
 	}
 	
 	COLOR = vec4(col.rgb, n_step * col.a);

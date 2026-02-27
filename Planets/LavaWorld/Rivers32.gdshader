@@ -2,28 +2,30 @@ shader_type canvas_item;
 render_mode blend_mix;
 
 uniform float pixels : hint_range(10,100);
-uniform float rotation : hint_range(0.0, 6.28) = 1.0;
+uniform float rotation : hint_range(0.0, 6.28) = 0.0;
 uniform vec2 light_origin = vec2(0.39, 0.39);
-uniform float time_speed : hint_range(0.0, 1.0) = 0.2;
-uniform float dither_size : hint_range(0.0, 10.0) = 2.0;
+uniform float time_speed : hint_range(-2.0, 3.0) = 0.2;
 uniform float light_border_1 : hint_range(0.0, 1.0) = 0.4;
-uniform float light_border_2 : hint_range(0.0, 1.0) = 0.6;
+uniform float light_border_2 : hint_range(0.0, 1.0) = 0.5;
+uniform float river_cutoff : hint_range(0.0, 1.0);
+
 uniform vec4 colors[32] : source_color;
+
 uniform float size = 50.0;
 uniform int OCTAVES : hint_range(0, 20, 1);
 uniform float seed: hint_range(1, 10);
 uniform float time = 0.0;
-uniform bool should_dither = true;
+
 
 float rand(vec2 coord) {
-	coord = mod(coord, vec2(1.0,1.0)*round(size));
+	coord = mod(coord, vec2(2.0,1.0)*round(size));
 	return fract(sin(dot(coord.xy ,vec2(12.9898,78.233))) * 15.5453 * seed);
 }
 
 float noise(vec2 coord){
 	vec2 i = floor(coord);
 	vec2 f = fract(coord);
-	
+		
 	float a = rand(i);
 	float b = rand(i + vec2(1.0, 0.0));
 	float c = rand(i + vec2(0.0, 1.0));
@@ -46,8 +48,11 @@ float fbm(vec2 coord){
 	return value;
 }
 
-bool dither(vec2 uv1, vec2 uv2) {
-	return mod(uv1.x+uv2.y,2.0/pixels) <= 1.0 / pixels;
+vec2 spherify(vec2 uv) {
+	vec2 centered= uv *2.0-1.0;
+	float z = sqrt(1.0 - dot(centered.xy, centered.xy));
+	vec2 sphere = centered/(z + 1.0);
+	return sphere * 0.5+0.5;
 }
 
 vec2 rotate(vec2 coord, float angle){
@@ -59,33 +64,35 @@ vec2 rotate(vec2 coord, float angle){
 void fragment() {
 	vec2 uv = floor(UV*pixels)/pixels;
 	
+	float d_light = distance(uv , light_origin);
+	
 	float d_circle = distance(uv, vec2(0.5));
-	float d_light = distance(uv , vec2(light_origin));
 	float a = step(d_circle, 0.49999);
 	
-	bool dith = dither(uv ,UV);
 	uv = rotate(uv, rotation);
-
-	float fbm1 = fbm(uv);
-	d_light += fbm(uv*size+fbm1+vec2(time*time_speed, 0.0))*0.3;
+	uv = spherify(uv);
 	
-	float dither_border = (1.0/pixels)*dither_size;
-
-	// Map original 3-color indices to 32-color indices
-	// Same logic as original NoAtmosphere
+	float fbm1 = fbm(uv*size+vec2(time*time_speed,0.0));
+	float river_fbm = fbm(uv + fbm1*2.5);
+	
+	d_light = pow(d_light, 2.0)*0.4;
+	d_light -= d_light * river_fbm;
+	
+	river_fbm = step(river_cutoff, river_fbm);
+	
+	// Map original 3-color indices to 32-color indices:
+	// colors[0] (shadow) -> colors[0]
+	// colors[1] (middle) -> colors[15]
+	// colors[2] (highlight) -> colors[31]
+	
 	vec4 col = colors[0];
 	if (d_light > light_border_1) {
 		col = colors[15];
-		if (d_light < light_border_1 + dither_border && (dith || !should_dither)) {
-			col = colors[0];
-		}
 	}
 	if (d_light > light_border_2) {
 		col = colors[31];
-		if (d_light < light_border_2 + dither_border && (dith || !should_dither)) {
-			col = colors[15];
-		}
 	}
 	
+	a *= step(river_cutoff, river_fbm);
 	COLOR = vec4(col.rgb, a * col.a);
 }

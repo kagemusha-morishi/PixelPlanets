@@ -7,10 +7,12 @@ uniform float time_speed : hint_range(0.0, 1.0) = 0.2;
 uniform float dither_size : hint_range(0.0, 10.0) = 2.0;
 uniform bool should_dither = true;
 uniform vec4 colors[32] : source_color;
+uniform int n_colors : hint_range(1, 32) = 31;
 
 uniform float size = 50.0;
 uniform int OCTAVES : hint_range(0, 20, 1);
 uniform float seed: hint_range(1, 10);
+
 uniform float time = 0.0;
 uniform float tilt = 4.0;
 uniform float n_layers = 4.0;
@@ -25,17 +27,21 @@ float rand(vec2 coord) {
 float noise(vec2 coord){
 	vec2 i = floor(coord);
 	vec2 f = fract(coord);
+		
 	float a = rand(i);
 	float b = rand(i + vec2(1.0, 0.0));
 	float c = rand(i + vec2(0.0, 1.0));
 	float d = rand(i + vec2(1.0, 1.0));
+
 	vec2 cubic = f * f * (3.0 - 2.0 * f);
+
 	return mix(a, b, cubic.x) + (c - a) * cubic.y * (1.0 - cubic.x) + (d - b) * cubic.x * cubic.y;
 }
 
 float fbm(vec2 coord){
 	float value = 0.0;
 	float scale = 0.5;
+
 	for(int i = 0; i < OCTAVES ; i++){
 		value += noise(coord) * scale;
 		coord *= 2.0;
@@ -54,15 +60,6 @@ bool dither(vec2 uv1, vec2 uv2) {
 	return mod(uv1.x+uv2.y,2.0/pixels) <= 1.0 / pixels;
 }
 
-vec4 sample_gradient(float t) {
-	t = clamp(t, 0.0, 1.0);
-	float scaled = t * 31.0;
-	int idx = int(floor(scaled));
-	int idx_next = min(idx + 1, 31);
-	float blend = fract(scaled);
-	return mix(colors[idx], colors[idx_next], blend);
-}
-
 void fragment() {
 	vec2 uv = UV;
 	uv = floor(uv * pixels) / pixels;
@@ -70,6 +67,7 @@ void fragment() {
 	
 	uv *= zoom;
 	uv -= (zoom - 1.0) / 2.0;
+	
 	uv = rotate(uv, rotation);
 	vec2 uv2 = uv;
 
@@ -93,12 +91,15 @@ void fragment() {
 
 	float a = step(f2 + d_to_center2, 0.7);
 	
-	f2 = clamp(f2 * 2.3, 0.0, 1.0);
+	f2 *= 2.3;
 	if(should_dither && dith) {
 		f2 *= 0.94;
 	}
 
-	vec4 col = sample_gradient(f2);
+	// Posterized color selection (same logic as original)
+	f2 = floor(f2 * (float(n_colors)));
+	f2 = min(f2, float(n_colors));
+	vec4 col = colors[int(f2)];
 	
 	COLOR = vec4(col.rgb, a * col.a);
 }

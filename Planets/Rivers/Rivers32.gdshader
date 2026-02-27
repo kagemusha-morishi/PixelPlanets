@@ -26,17 +26,21 @@ float rand(vec2 coord) {
 float noise(vec2 coord){
 	vec2 i = floor(coord);
 	vec2 f = fract(coord);
+		
 	float a = rand(i);
 	float b = rand(i + vec2(1.0, 0.0));
 	float c = rand(i + vec2(0.0, 1.0));
 	float d = rand(i + vec2(1.0, 1.0));
+
 	vec2 cubic = f * f * (3.0 - 2.0 * f);
+
 	return mix(a, b, cubic.x) + (c - a) * cubic.y * (1.0 - cubic.x) + (d - b) * cubic.x * cubic.y;
 }
 
 float fbm(vec2 coord){
 	float value = 0.0;
 	float scale = 0.5;
+
 	for(int i = 0; i < OCTAVES ; i++){
 		value += noise(coord) * scale;
 		coord *= 2.0;
@@ -62,15 +66,6 @@ bool dither(vec2 uv1, vec2 uv2) {
 	return mod(uv1.x+uv2.y,2.0/pixels) <= 1.0 / pixels;
 }
 
-vec4 sample_gradient(float t) {
-	t = clamp(t, 0.0, 1.0);
-	float scaled = t * 31.0;
-	int idx = int(floor(scaled));
-	int idx_next = min(idx + 1, 31);
-	float blend = fract(scaled);
-	return mix(colors[idx], colors[idx_next], blend);
-}
-
 void fragment() {
 	vec2 uv = floor(UV*pixels)/pixels;
 	bool dith = dither(uv, UV);
@@ -92,26 +87,53 @@ void fragment() {
 	
 	float dither_border = (1.0/pixels)*dither_size;
 	
-	float fbm_val = fbm1 + fbm4 * 0.2;
 	if (d_light < light_border_1) {
-		fbm_val *= 0.9;
+		fbm4 *= 0.9;
 	}
 	if (d_light > light_border_1) {
-		fbm_val *= 1.1;
-	}
+		fbm2 *= 1.05;
+		fbm3 *= 1.05;
+		fbm4 *= 1.05;
+	} 
 	if (d_light > light_border_2) {
-		fbm_val *= 1.3;
+		fbm2 *= 1.3;
+		fbm3 *= 1.4;
+		fbm4 *= 1.8;
+		
 		if (d_light < light_border_2 + dither_border) {
 			if (dith || !should_dither) {
-				fbm_val *= 0.5;
+				fbm4 *= 0.5;
 			}
 		}
-	}
+		
+	} 
 	
 	d_light = pow(d_light, 2.0)*0.4;
 	
-	float gradient_t = clamp(fbm_val * 0.5 + d_light, 0.0, 1.0);
-	vec4 col = sample_gradient(gradient_t);
+	// Map original 6-color indices to 32-color indices:
+	// colors[0] -> colors[0] (deepest land shadow)
+	// colors[1] -> colors[6] (land shadow)
+	// colors[2] -> colors[12] (land base)
+	// colors[3] -> colors[18] (land highlight)
+	// colors[4] -> colors[24] (water shadow)
+	// colors[5] -> colors[31] (water highlight)
 	
+	vec4 col = colors[18];
+	if (fbm4 + d_light < fbm1*1.5) {
+		col = colors[12];
+	}
+	if (fbm3 + d_light < fbm1*1.0) {
+		col = colors[6];
+	}
+	if (fbm2 + d_light < fbm1) {
+		col = colors[0];
+	}
+	if (river_fbm < fbm1*0.5) {
+		col = colors[31];
+		if (fbm4 + d_light < fbm1*1.5) {
+			col = colors[24];
+		}
+	}
+
 	COLOR = vec4(col.rgb, a * col.a);
 }
