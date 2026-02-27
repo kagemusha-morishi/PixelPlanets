@@ -116,6 +116,11 @@ func set_planet_holder_margin(margin_value):
 func _on_layer_selected(id):
 	viewport_planet.get_child(0).toggle_layer(id)
 	_make_layer_selection(viewport_planet.get_child(0))
+	# Update viewport size based on new effective scale
+	var planet = viewport_planet.get_child(0)
+	var effective_scale = planet.get_effective_scale()
+	viewport.size = Vector2(pixels, pixels) * effective_scale
+	planet.position = pixels * 0.5 * (effective_scale - 1) * Vector2(1, 1)
 
 func _make_layer_selection(planet):
 	var layers = planet.get_layers()
