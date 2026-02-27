@@ -1,8 +1,5 @@
 extends "res://Planets/Planet.gd"
 
-var relative_scale = 2.0
-var gui_zoom = 2.0
-
 func set_pixels(amount):
 	$Blobs.material.set_shader_parameter("pixels", amount*relative_scale)
 	$Star.material.set_shader_parameter("pixels", amount)
